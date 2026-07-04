@@ -202,6 +202,16 @@
 (function(){
   const SUPABASE_PROXY_URL = "https://ezwzjwzgthfomnkyumyo.supabase.co/functions/v1/dashboard-proxy";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_q2nm3yFL_AMwfqLdjT0ZTQ__VnlWsZN";
+  const DASHBOARD_SECRET = "ySUOPMQ1ZuIDtO67uYg8O5zc4x2ORJUh";
+
+  function apiHeaders(extra){
+    return {
+      'Authorization': `Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+      'apikey': SUPABASE_PUBLISHABLE_KEY,
+      'x-dashboard-secret': DASHBOARD_SECRET,
+      ...extra
+    };
+  }
 
   const root = document.getElementById('app-root');
 
@@ -222,7 +232,7 @@
             <datalist id="category-options"></datalist>
             <button id="task-add-btn">Dodaj</button>
           </div>
-          <ul class="task-list" id="task-list"></ul>
+          <ul class="task-list" id="task-list"><span class="spinner"></span></ul>
         </div>
         <div class="side">
           <div class="panel" id="weather-panel">
@@ -239,25 +249,21 @@
   `;
 
   /* ---------------- TASKS ---------------- */
-  const TASKS_KEY = 'tasks';
+  const TASKS_URL = `${SUPABASE_PROXY_URL}?type=tasks`;
   let tasks = [];
 
   async function loadTasks(){
+    const list = document.getElementById('task-list');
     try{
-      const raw = localStorage.getItem(TASKS_KEY);
-      tasks = raw ? JSON.parse(raw) : [];
+      const res = await fetch(TASKS_URL, { headers: apiHeaders() });
+      if(!res.ok) throw new Error('bad response');
+      const data = await res.json();
+      tasks = (data.tasks || []).map(t => ({ id: t.id, text: t.text, done: t.done, category: t.category, createdAt: t.created_at }));
     }catch(e){
-      tasks = [];
+      list.innerHTML = '<div class="task-empty">Nie udało się połączyć z bazą zadań. Sprawdź połączenie i odśwież stronę.</div>';
+      return;
     }
     renderTasks();
-  }
-
-  async function saveTasks(){
-    try{
-      localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
-    }catch(e){
-      console.error('Nie udało się zapisać zadań', e);
-    }
   }
 
   function renderTasks(){
@@ -324,40 +330,78 @@
     return div.innerHTML;
   }
 
-  function addTask(){
+  async function addTask(){
     const input = document.getElementById('task-input');
     const catInput = document.getElementById('task-category-input');
     const text = input.value.trim();
     if(!text) return;
     const category = catInput.value.trim() || 'Ogólne';
-    tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), text, done:false, category, createdAt: Date.now() });
     input.value = '';
-    renderTasks();
-    saveTasks();
+    input.disabled = true;
+    try{
+      const res = await fetch(TASKS_URL, {
+        method: 'POST',
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ action: 'add', text, category })
+      });
+      if(!res.ok) throw new Error('bad response');
+      const data = await res.json();
+      tasks.push({ id: data.task.id, text: data.task.text, done: data.task.done, category: data.task.category, createdAt: data.task.created_at });
+      renderTasks();
+    }catch(e){
+      alert('Nie udało się dodać zadania — sprawdź połączenie i spróbuj ponownie.');
+      input.value = text;
+    }
+    input.disabled = false;
+    input.focus();
   }
 
-  function toggleTask(id){
+  async function toggleTask(id){
     const t = tasks.find(t => t.id === id);
     if(!t) return;
-    t.done = !t.done;
-    if(t.done){
+    const newDone = !t.done;
+    t.done = newDone;
+    if(newDone){
       const stamp = document.querySelector(`[data-stamp="${id}"]`);
       if(stamp){
         stamp.style.animation = 'none';
         void stamp.offsetWidth;
         stamp.style.animation = 'stampIn 0.5s ease-out forwards';
       }
-      setTimeout(() => { renderTasks(); saveTasks(); }, 480);
+      setTimeout(renderTasks, 480);
     } else {
       renderTasks();
-      saveTasks();
+    }
+    try{
+      const res = await fetch(TASKS_URL, {
+        method: 'POST',
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ action: 'toggle', id, done: newDone })
+      });
+      if(!res.ok) throw new Error('bad response');
+    }catch(e){
+      t.done = !newDone; // cofnij zmianę jeśli zapis się nie udał
+      renderTasks();
+      alert('Nie udało się zapisać zmiany — sprawdź połączenie.');
     }
   }
 
-  function deleteTask(id){
+  async function deleteTask(id){
+    const backup = tasks;
     tasks = tasks.filter(t => t.id !== id);
     renderTasks();
-    saveTasks();
+    try{
+      const res = await fetch(TASKS_URL, {
+        method: 'POST',
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ action: 'delete', id })
+      });
+      if(!res.ok) throw new Error('bad response');
+    }catch(e){
+      tasks = backup; // przywróć jeśli usuwanie się nie udało
+      renderTasks();
+      alert('Nie udało się usunąć zadania — sprawdź połączenie.');
+    }
   }
 
   document.getElementById('task-add-btn').addEventListener('click', addTask);
