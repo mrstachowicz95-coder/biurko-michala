@@ -61,6 +61,50 @@
   }
   .side{ display:flex; flex-direction:column; gap:18px; }
 
+  .grid-secondary{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px; margin-top: 18px;
+  }
+
+  .links-input-row{ display:flex; gap:8px; margin-bottom: 14px; }
+  .links-input-row input{
+    border: 1.5px solid var(--line); background: #fff; color: var(--ink);
+    border-radius: 7px; padding: 9px 11px; font-size: 13.5px; outline: none;
+    font-family: inherit;
+  }
+  #link-label-input{ flex: 0 0 110px; }
+  #link-url-input{ flex: 1; }
+  .links-input-row input:focus{ border-color: var(--brass); }
+  .links-input-row button{
+    background: var(--brass); color: #fff; border:none; border-radius:7px;
+    padding: 0 16px; font-weight: 600; font-size: 13.5px; cursor:pointer;
+    transition: background .15s;
+  }
+  .links-input-row button:hover{ background: var(--brass-dark); }
+
+  .links-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; }
+  .link-item{
+    display:flex; align-items:center; gap:8px; padding: 8px 6px;
+    border-radius: 7px; transition: background .15s;
+  }
+  .link-item:hover{ background: var(--panel-soft); }
+  .link-item a{
+    flex:1; color: var(--teal); text-decoration:none; font-size: 13.5px;
+    font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .link-item a:hover{ text-decoration:underline; }
+  .link-item .link-url{
+    color: var(--muted); font-size: 11px; font-family: "SF Mono","IBM Plex Mono",monospace;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px;
+  }
+  .link-del{
+    background:none; border:none; color: var(--muted); cursor:pointer;
+    font-size: 14px; padding: 2px 6px; border-radius: 5px; transition: all .15s;
+    flex-shrink:0;
+  }
+  .link-del:hover{ color: var(--rust); background: rgba(180,83,58,0.1); }
+  .links-empty{ color: var(--muted); font-size: 13px; padding: 10px 4px; font-style: italic; }
+
   /* --- Notatnik nad tablicą --- */
   .notepad{
     background:#fffef7;
@@ -380,6 +424,17 @@
           <div class="panel" id="fx-panel">
             <div class="exchange-board" id="fx-body"><span class="spinner"></span></div>
           </div>
+        </div>
+      </div>
+      <div class="grid-secondary">
+        <div class="panel" id="links-panel">
+          <h2>Szybkie linki</h2>
+          <div class="links-input-row">
+            <input id="link-label-input" type="text" placeholder="Nazwa" />
+            <input id="link-url-input" type="text" placeholder="https://..." />
+            <button id="link-add-btn">Dodaj</button>
+          </div>
+          <ul class="links-list" id="links-list"><span class="spinner"></span></ul>
         </div>
       </div>
     </div>
@@ -717,5 +772,99 @@
     }
   }
   loadFx();
+
+  /* ---------------- QUICK LINKS ---------------- */
+  const LINKS_URL = `${SUPABASE_PROXY_URL}?type=links`;
+  let links = [];
+
+  function normalizeUrl(u){
+    if(!/^https?:\/\//i.test(u)) return 'https://' + u;
+    return u;
+  }
+
+  function hostnameOf(u){
+    try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return u; }
+  }
+
+  async function loadLinks(){
+    const list = document.getElementById('links-list');
+    try{
+      const res = await fetch(LINKS_URL, { headers: apiHeaders() });
+      if(!res.ok) throw new Error('bad response');
+      const data = await res.json();
+      links = data.links || [];
+    }catch(e){
+      list.innerHTML = '<div class="links-empty">Nie udało się połączyć z bazą linków.</div>';
+      return;
+    }
+    renderLinks();
+  }
+
+  function renderLinks(){
+    const list = document.getElementById('links-list');
+    if(!links.length){
+      list.innerHTML = '<div class="links-empty">Brak zapisanych linków — dodaj pierwszy powyżej.</div>';
+      return;
+    }
+    list.innerHTML = links.map(l => `
+      <li class="link-item" data-id="${l.id}">
+        <a href="${escapeHtml(normalizeUrl(l.url))}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.label)}</a>
+        <span class="link-url">${escapeHtml(hostnameOf(normalizeUrl(l.url)))}</span>
+        <button class="link-del" data-id="${l.id}" title="Usuń">✕</button>
+      </li>
+    `).join('');
+    list.querySelectorAll('.link-del').forEach(btn => {
+      btn.addEventListener('click', () => deleteLink(btn.dataset.id));
+    });
+  }
+
+  async function addLink(){
+    const labelInput = document.getElementById('link-label-input');
+    const urlInput = document.getElementById('link-url-input');
+    const label = labelInput.value.trim();
+    const url = urlInput.value.trim();
+    if(!label || !url) return;
+    labelInput.disabled = true; urlInput.disabled = true;
+    try{
+      const res = await fetch(LINKS_URL, {
+        method: 'POST',
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ action: 'add', label, url: normalizeUrl(url) })
+      });
+      if(!res.ok) throw new Error('bad response');
+      const data = await res.json();
+      links.push(data.link);
+      labelInput.value = ''; urlInput.value = '';
+      renderLinks();
+    }catch(e){
+      alert('Nie udało się dodać linku — sprawdź połączenie i spróbuj ponownie.');
+    }
+    labelInput.disabled = false; urlInput.disabled = false;
+    labelInput.focus();
+  }
+
+  async function deleteLink(id){
+    const backup = links;
+    links = links.filter(l => l.id !== id);
+    renderLinks();
+    try{
+      const res = await fetch(LINKS_URL, {
+        method: 'POST',
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ action: 'delete', id })
+      });
+      if(!res.ok) throw new Error('bad response');
+    }catch(e){
+      links = backup;
+      renderLinks();
+      alert('Nie udało się usunąć linku — sprawdź połączenie.');
+    }
+  }
+
+  document.getElementById('link-add-btn').addEventListener('click', addLink);
+  document.getElementById('link-url-input').addEventListener('keydown', e => { if(e.key === 'Enter') addLink(); });
+  document.getElementById('link-label-input').addEventListener('keydown', e => { if(e.key === 'Enter') addLink(); });
+
+  loadLinks();
 })();
 </script>
