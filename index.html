@@ -76,10 +76,7 @@
     content:''; position:absolute; top:0; bottom:0; left:38px; width:1px;
     background: rgba(200,90,90,0.32);
   }
-  .notepad-counter{
-    position:absolute; top:8px; right:14px;
-    font-family: "SF Mono","IBM Plex Mono",monospace; font-size:11px; color:#9a9280;
-  }
+
   .notepad .task-input-row{
     display:flex; gap:12px; align-items:baseline; margin:0; position:relative; z-index:1;
   }
@@ -243,9 +240,9 @@
   }
   .weather-today{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    height:100%; gap:10px; text-align:center;
+    height:100%; gap:10px; text-align:center; padding-bottom: 18px;
   }
-  .weather-today-icon{ font-size:42px; line-height:1; }
+  .weather-today-icon{ font-size:54px; line-height:1; margin-top:-16px; }
   .weather-today-temps{ display:flex; gap:14px; }
   .wt-label{
     display:block; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;
@@ -359,7 +356,6 @@
       <div class="grid">
         <div class="tasks-column" style="display:flex; flex-direction:column; gap:16px;">
           <div class="notepad">
-            <span class="notepad-counter" id="task-count"></span>
             <div class="task-input-row">
               <input id="task-input" type="text" placeholder="" />
               <div class="color-picker-wrap">
@@ -449,9 +445,6 @@
 
   function renderTasks(){
     const list = document.getElementById('task-list');
-    const count = document.getElementById('task-count');
-    const active = tasks.filter(t => !t.done).length;
-    count.textContent = tasks.length ? `${active}/${tasks.length}` : '';
 
     // odśwież podpowiedzi kategorii
     if(!tasks.length){
@@ -660,7 +653,7 @@
   }
   loadWeather();
 
-  /* ---------------- CURRENCY ---------------- */  
+  /* ---------------- CURRENCY ---------------- */
   const FX_PREV_KEY = 'fx_prev_rates';
 
   function arrowFor(curr, prev){
