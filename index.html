@@ -61,79 +61,165 @@
   }
   .side{ display:flex; flex-direction:column; gap:18px; }
 
-  /* --- Tasks --- */
-  .task-input-row{ display:flex; gap:8px; margin-bottom: 16px; }
-  .task-input-row input{
-    flex:1; border: 1.5px solid var(--line); background: #fff; color: var(--ink);
-    border-radius: 7px; padding: 10px 12px; font-size: 14px; outline: none;
-    font-family: inherit;
+  /* --- Notatnik nad tablicą --- */
+  .notepad{
+    background:#fffef7;
+    background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, rgba(120,150,190,0.38) 28px);
+    background-position: 0 8px;
+    border-radius: 6px;
+    padding: 16px 18px 14px 26px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.5) inset;
+    position: relative;
+    transform: rotate(-0.4deg);
   }
-  .task-input-row input:focus{ border-color: var(--brass); }
-  .task-input-row button{
-    background: var(--brass); color: #fff; border:none; border-radius:7px;
-    padding: 0 18px; font-weight: 600; font-size: 14px; cursor:pointer;
-    transition: background .15s;
+  .notepad::before{
+    content:''; position:absolute; top:0; bottom:0; left:38px; width:1px;
+    background: rgba(200,90,90,0.32);
   }
-  .task-input-row button:hover{ background: var(--brass-dark); }
+  .notepad-counter{
+    position:absolute; top:8px; right:14px;
+    font-family: "SF Mono","IBM Plex Mono",monospace; font-size:11px; color:#9a9280;
+  }
+  .notepad .task-input-row{
+    display:flex; gap:12px; align-items:baseline; margin:0; position:relative; z-index:1;
+  }
+  .notepad input#task-input{
+    flex:1; background:transparent; border:none; outline:none;
+    font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+    font-size: 16px; color:#2b2820; padding: 5px 2px; line-height: 27px;
+  }
+  .notepad input#task-input::placeholder{ color:#a39c88; font-style:italic; }
+  .notepad input#task-category-input{
+    width: 110px; background:transparent; border:none; outline:none;
+    border-bottom: 1px dashed rgba(0,0,0,0.22);
+    font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+    font-size: 14px; color:#5c5648; padding: 5px 2px; line-height: 27px;
+  }
+  .notepad button#task-add-btn{
+    background: #5C3A1E; color: #fff; border:none; border-radius:6px;
+    padding: 0 16px; height: 34px; font-weight: 600; font-size: 13px; cursor:pointer;
+    transition: background .15s; align-self:center;
+  }
+  .notepad button#task-add-btn:hover{ background: #472C16; }
 
-  .task-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
-  .task-item{
-    display:flex; align-items:center; gap:10px; padding: 10px 8px;
-    border-radius: 7px; border: 1px solid transparent;
-    transition: background .15s;
+  .color-picker-wrap{ position:relative; flex-shrink:0; }
+  .color-picker-btn{
+    width:28px; height:28px; border-radius:3px; border:none; cursor:pointer;
+    background: var(--selected, #FFEE93);
+    box-shadow: 1px 2px 4px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(0,0,0,0.08);
+    position:relative; align-self:center;
   }
-  .task-item:hover{ background: var(--panel-soft); }
-  .task-check{
-    width:20px; height:20px; border-radius:50%; border:2px solid var(--teal);
-    display:flex; align-items:center; justify-content:center; cursor:pointer;
-    flex-shrink:0; font-size:12px; color:transparent; transition: all .15s;
+  .color-picker-btn::before{
+    content:''; position:absolute; top:-4px; left:50%; margin-left:-3px;
+    width:6px; height:6px; border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, #ff8f8f, #a11d1d 75%);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
-  .task-check.done{ background: var(--teal); color:#fff; }
-  .task-text{ flex:1; font-size: 14.5px; word-break: break-word; }
-  .task-item.done .task-text{ text-decoration: line-through; color: var(--muted); }
-  .task-del{
-    background:none; border:none; color: var(--muted); cursor:pointer;
-    font-size: 16px; padding: 4px 8px; border-radius: 5px; transition: all .15s;
-    flex-shrink:0;
+  .color-popup{
+    position:absolute; top:36px; right:0; z-index:10;
+    background:#fff; border-radius:9px; padding:8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    display:flex; gap:7px;
   }
-  .task-del:hover{ color: var(--rust); background: rgba(180,83,58,0.1); }
-  .task-empty{ color: var(--muted); font-size: 13.5px; padding: 10px 4px; font-style: italic; }
-  .task-stamp{
-    position:absolute; font-family: Georgia, serif; font-weight:700; font-size:11px;
-    letter-spacing:0.1em; color: var(--teal); border: 1.5px solid var(--teal);
-    border-radius: 4px; padding: 2px 6px; transform: rotate(-8deg) scale(0);
-    opacity:0; pointer-events:none; right: 10px;
+  .color-popup[hidden]{ display:none; }
+  .color-swatch{
+    width:22px; height:22px; border-radius:50%; border:2px solid #fff;
+    box-shadow: 0 0 0 1.5px rgba(0,0,0,0.15); cursor:pointer; padding:0;
+    transition: transform .1s;
   }
-  @keyframes stampIn{
-    0%{ transform: rotate(-8deg) scale(0.4); opacity:0; }
-    55%{ transform: rotate(-8deg) scale(1.15); opacity:1; }
-    100%{ transform: rotate(-8deg) scale(1); opacity:1; }
-  }
-  .task-count{
-    font-family: "SF Mono", "IBM Plex Mono", Consolas, monospace; font-size: 11px;
-    color: var(--muted); margin-left:auto; font-weight:400; text-transform:none;
-    letter-spacing:0;
-  }
+  .color-swatch:hover{ transform: scale(1.15); }
+  .color-swatch.selected{ box-shadow: 0 0 0 2px #3B2413; }
 
-  .category-group{ margin-bottom: 4px; }
+  /* --- Tasks: korkowa tablica --- */
+  #tasks-panel{
+    background-color: #C68A4E;
+    background-image:
+      radial-gradient(circle, rgba(255,255,255,0.10) 1px, transparent 1.5px),
+      radial-gradient(circle, rgba(0,0,0,0.18) 1px, transparent 1.5px),
+      radial-gradient(circle at 50% 30%, rgba(0,0,0,0.22), transparent 70%);
+    background-size: 5px 5px, 8px 8px, 100% 100%;
+    background-position: 0 0, 2px 3px, 0 0;
+    border: 9px solid #7A4A26;
+    box-shadow: 0 10px 26px rgba(0,0,0,0.4), inset 0 0 40px rgba(0,0,0,0.28);
+  }
+  #tasks-panel::before{ display:none; }
+  #tasks-panel h2{ color:#3B2413; text-shadow: 0 1px 0 rgba(255,255,255,0.18); }
+  #tasks-panel .task-count{ color:#6b4423; }
+
+  .task-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+  .task-empty{ color:#fff8ec; font-size: 13.5px; padding: 24px 4px; font-style: italic; text-align:center; }
+
+  .category-group{ margin: 2px 4px 20px; }
   .category-group summary{
-    cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;
-    padding: 8px 6px; font-weight:600; font-size: 13px; color: var(--ink);
-    border-bottom: 1px solid var(--line); user-select:none;
+    cursor:pointer; list-style:none; user-select:none;
+    display:inline-flex; align-items:center; gap:7px;
+    background: linear-gradient(100deg, rgba(255,248,220,0.95), rgba(255,248,220,0.78));
+    color:#3B2413; font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.06em;
+    padding: 6px 14px; border-radius:2px; transform: rotate(-1.1deg);
+    box-shadow: 1px 3px 7px rgba(0,0,0,0.32);
   }
   .category-group summary::-webkit-details-marker{ display:none; }
-  .category-arrow{ display:inline-block; transition: transform .15s; color: var(--brass); font-size:11px; }
+  .category-arrow{ display:inline-block; transition: transform .15s; color:#8a5a2b; font-size:10px; }
   .category-group[open] .category-arrow{ transform: rotate(90deg); }
   .category-count{
-    margin-left:auto; font-family:"SF Mono","IBM Plex Mono",monospace; font-size:11px;
-    color: var(--muted); font-weight:400;
+    margin-left:4px; font-family:"SF Mono","IBM Plex Mono",monospace; font-size:10px;
+    color:#6b4423; font-weight:400;
   }
-  .category-body{ padding: 4px 0 8px 0; }
-  .task-category-select{
-    border: 1.5px solid var(--line); background: #fff; color: var(--ink);
-    border-radius: 7px; padding: 0 10px; font-size: 13px; font-family: inherit;
-    max-width: 130px;
+  .category-swatch{
+    width:14px; height:14px; border-radius:50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
+    display:inline-block;
   }
+  .category-body{ padding: 20px 2px 4px; }
+  .category-body .task-list{
+    display:flex; flex-wrap:wrap; gap: 20px 16px; list-style:none; margin:0; padding:0 2px 4px;
+  }
+
+  .task-item{
+    width:148px; min-height:96px; background: var(--paper, #FFEE93);
+    padding: 18px 12px 10px; border-radius: 2px; position:relative;
+    box-shadow: 2px 6px 10px rgba(0,0,0,0.38), inset 0 0 0 1px rgba(0,0,0,0.05);
+    transform: rotate(var(--rot, 0deg));
+    transition: transform .15s ease;
+    display:flex; flex-direction:column; gap:10px; flex-shrink:0;
+  }
+  .task-item:hover{ transform: rotate(0deg) scale(1.04); z-index:2; }
+  .task-item::before{
+    content:''; position:absolute; top:-8px; left:50%; margin-left:-7px;
+    width:14px; height:14px; border-radius:50%;
+    background: radial-gradient(circle at 30% 30%, #ff8f8f, #a11d1d 75%);
+    box-shadow: 0 3px 4px rgba(0,0,0,0.5), inset 0 -1px 2px rgba(0,0,0,0.3);
+  }
+  .task-text{
+    font-size: 13px; line-height:1.35; color:#3a3220; font-family: Georgia, serif;
+    word-break: break-word; flex:1;
+  }
+  .task-item.done{ opacity:0.62; }
+  .task-item.done .task-text{ text-decoration: line-through; color:#5a5442; }
+  .task-item-footer{ display:flex; align-items:center; justify-content:space-between; }
+  .task-check{
+    width:18px; height:18px; border-radius:50%; border:2px solid rgba(0,0,0,0.35);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    font-size:11px; color:transparent; background:rgba(255,255,255,0.45); flex-shrink:0;
+    transition: all .15s;
+  }
+  .task-check.done{ background:#2F6F6B; border-color:#2F6F6B; color:#fff; }
+  .task-del{
+    background:none; border:none; color: rgba(0,0,0,0.35); cursor:pointer;
+    font-size: 14px; padding: 2px 4px; line-height:1; transition: color .15s;
+  }
+  .task-del:hover{ color:#a11d1d; }
+  .task-stamp{
+    position:absolute; font-family: Georgia, serif; font-weight:700; font-size:10px;
+    letter-spacing:0.08em; color: #2F6F6B; border: 1.5px solid #2F6F6B;
+    border-radius: 4px; padding: 2px 5px; transform: rotate(-10deg) scale(0);
+    opacity:0; pointer-events:none; top: 8px; right: 8px;
+  }
+  @keyframes stampIn{
+    0%{ transform: rotate(-10deg) scale(0.4); opacity:0; }
+    55%{ transform: rotate(-10deg) scale(1.15); opacity:1; }
+    100%{ transform: rotate(-10deg) scale(1); opacity:1; }
+  }
+
 
   /* --- Weather 7-day --- */
   .weather-days{ display:flex; flex-direction:column; gap:2px; }
@@ -224,15 +310,21 @@
         <div class="date">${dateStr}</div>
       </div>
       <div class="grid">
-        <div class="panel" id="tasks-panel">
-          <h2>Zadania <span class="task-count" id="task-count"></span></h2>
-          <div class="task-input-row">
-            <input id="task-input" type="text" placeholder="Dodaj zadanie i wciśnij Enter..." />
-            <input id="task-category-input" class="task-category-select" list="category-options" type="text" placeholder="Kategoria" value="Ogólne" />
-            <datalist id="category-options"></datalist>
-            <button id="task-add-btn">Dodaj</button>
+        <div class="tasks-column" style="display:flex; flex-direction:column; gap:16px;">
+          <div class="notepad">
+            <span class="notepad-counter" id="task-count"></span>
+            <div class="task-input-row">
+              <input id="task-input" type="text" placeholder="" />
+              <div class="color-picker-wrap">
+                <button id="color-picker-btn" class="color-picker-btn" type="button" title="Wybierz kolor karteczki"></button>
+                <div class="color-popup" id="color-popup" hidden></div>
+              </div>
+              <button id="task-add-btn">Dodaj</button>
+            </div>
           </div>
-          <ul class="task-list" id="task-list"><span class="spinner"></span></ul>
+          <div class="panel" id="tasks-panel">
+            <ul class="task-list" id="task-list"><span class="spinner"></span></ul>
+          </div>
         </div>
         <div class="side">
           <div class="panel" id="weather-panel">
@@ -266,6 +358,46 @@
     renderTasks();
   }
 
+  const PAPER_COLORS = ['#FFEE93','#FFD1DC','#C9F2C7','#BFE3FF','#FFD9A0','#E3D2F5'];
+  const ROTATIONS = [-4,-2,-1,1,2,3,-3,4];
+
+  function hashStr(str){
+    let h = 0;
+    for(let i=0;i<str.length;i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    return h;
+  }
+  function rotationFor(id){ return ROTATIONS[hashStr(id + 'r') % ROTATIONS.length]; }
+
+  let selectedColor = PAPER_COLORS[0];
+  const colorBtn = document.getElementById('color-picker-btn');
+  const colorPopup = document.getElementById('color-popup');
+
+  function refreshColorSwatches(){
+    colorPopup.innerHTML = PAPER_COLORS.map(c => `
+      <button type="button" class="color-swatch ${c === selectedColor ? 'selected' : ''}" data-color="${c}" style="background:${c};"></button>
+    `).join('');
+    colorPopup.querySelectorAll('.color-swatch').forEach(sw => {
+      sw.addEventListener('click', () => {
+        selectedColor = sw.dataset.color;
+        colorBtn.style.setProperty('--selected', selectedColor);
+        refreshColorSwatches();
+        colorPopup.hidden = true;
+      });
+    });
+  }
+  refreshColorSwatches();
+  colorBtn.style.setProperty('--selected', selectedColor);
+
+  colorBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    colorPopup.hidden = !colorPopup.hidden;
+  });
+  document.addEventListener('click', (e) => {
+    if(!colorPopup.hidden && !colorPopup.contains(e.target) && e.target !== colorBtn){
+      colorPopup.hidden = true;
+    }
+  });
+
   function renderTasks(){
     const list = document.getElementById('task-list');
     const count = document.getElementById('task-count');
@@ -273,40 +405,38 @@
     count.textContent = tasks.length ? `${active}/${tasks.length}` : '';
 
     // odśwież podpowiedzi kategorii
-    const categoryOptions = document.getElementById('category-options');
-    const uniqueCats = [...new Set(tasks.map(t => t.category || 'Ogólne'))];
-    categoryOptions.innerHTML = uniqueCats.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
-
     if(!tasks.length){
       list.innerHTML = '<div class="task-empty">Brak zadań — dodaj pierwsze powyżej.</div>';
       return;
     }
 
-    // grupowanie po kategorii, zachowując kolejność pierwszego pojawienia się
+    // grupowanie po kolorze karteczki, zachowując kolejność pierwszego pojawienia się
     const groups = new Map();
     tasks.forEach(t => {
-      const cat = t.category || 'Ogólne';
-      if(!groups.has(cat)) groups.set(cat, []);
-      groups.get(cat).push(t);
+      const color = t.category || PAPER_COLORS[0];
+      if(!groups.has(color)) groups.set(color, []);
+      groups.get(color).push(t);
     });
 
-    list.innerHTML = [...groups.entries()].map(([cat, catTasks]) => {
+    list.innerHTML = [...groups.entries()].map(([color, catTasks]) => {
       const sorted = [...catTasks].sort((a,b) => (a.done === b.done) ? 0 : (a.done ? 1 : -1));
       const activeInCat = catTasks.filter(t => !t.done).length;
       return `
         <details class="category-group" open>
           <summary>
             <span class="category-arrow">▶</span>
-            <span>${escapeHtml(cat)}</span>
+            <span class="category-swatch" style="background:${color};"></span>
             <span class="category-count">${activeInCat}/${catTasks.length}</span>
           </summary>
           <div class="category-body">
             <ul class="task-list" style="margin:0; padding:0;">
               ${sorted.map(t => `
-                <li class="task-item ${t.done ? 'done' : ''}" data-id="${t.id}" style="position:relative;">
-                  <div class="task-check ${t.done ? 'done' : ''}" data-action="toggle" data-id="${t.id}">${t.done ? '✓' : ''}</div>
+                <li class="task-item ${t.done ? 'done' : ''}" data-id="${t.id}" style="--paper:${t.category || PAPER_COLORS[0]}; --rot:${rotationFor(t.id)}deg;">
                   <div class="task-text">${escapeHtml(t.text)}</div>
-                  <button class="task-del" data-action="delete" data-id="${t.id}" title="Usuń">✕</button>
+                  <div class="task-item-footer">
+                    <div class="task-check ${t.done ? 'done' : ''}" data-action="toggle" data-id="${t.id}">${t.done ? '✓' : ''}</div>
+                    <button class="task-del" data-action="delete" data-id="${t.id}" title="Usuń">✕</button>
+                  </div>
                   <div class="task-stamp" data-stamp="${t.id}">GOTOWE</div>
                 </li>
               `).join('')}
@@ -332,10 +462,9 @@
 
   async function addTask(){
     const input = document.getElementById('task-input');
-    const catInput = document.getElementById('task-category-input');
     const text = input.value.trim();
     if(!text) return;
-    const category = catInput.value.trim() || 'Ogólne';
+    const category = selectedColor;
     input.value = '';
     input.disabled = true;
     try{
