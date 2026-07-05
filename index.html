@@ -41,7 +41,7 @@
     color: rgba(243,239,227,0.55);
   }
   .grid{
-    display:grid; grid-template-columns: 1.5fr 1fr; gap: 18px;
+    display:grid; grid-template-columns: 1.2fr 1fr; gap: 18px;
   }
   @media (max-width: 720px){ .grid{ grid-template-columns: 1fr; } }
 
@@ -221,6 +221,42 @@
   }
 
 
+  /* --- Weather: okno z dwoma szybami --- */
+  #weather-panel{
+    background:none; box-shadow:none; padding:0; border-radius:0; overflow:visible;
+  }
+  #weather-panel::before{ display:none; }
+  .window-frame{
+    display:flex; background:#f5f5f2; border-radius:8px; padding:12px; gap:12px;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.15);
+    align-items:stretch;
+  }
+  .window-pane{
+    flex: 1 1 50%; box-sizing: border-box;
+    background: linear-gradient(160deg, #eef6fb 0%, #d7e8f2 100%);
+    border-radius: 4px; padding: 14px 12px;
+    box-shadow: inset 0 0 20px rgba(120,160,190,0.22), inset 0 0 0 1px rgba(255,255,255,0.6);
+  }
+  .window-mullion{
+    width:15px; flex-shrink:0; background:#f5f5f2; border-radius:3px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+  }
+  .weather-today{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    height:100%; gap:10px; text-align:center;
+  }
+  .weather-today-icon{ font-size:42px; line-height:1; }
+  .weather-today-temps{ display:flex; gap:14px; }
+  .wt-label{
+    display:block; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;
+    color: var(--muted);
+  }
+  .wt-value{
+    display:block; font-family:"SF Mono","IBM Plex Mono",monospace; font-size:20px;
+    font-weight:600; color: var(--ink); margin-top:2px;
+  }
+  .weather-today-place{ font-size:12px; color: var(--muted); margin-top:2px; }
+
   /* --- Weather 7-day --- */
   .weather-days{ display:flex; flex-direction:column; gap:2px; }
   .weather-day-row{
@@ -242,21 +278,32 @@
   .weather-day-min{ color: var(--muted); }
   .weather-place{ font-size: 12px; color: var(--muted); margin-top: 10px; }
 
-  /* --- Weather --- */
-  .weather-main{ display:flex; align-items:center; gap:16px; }
-  .weather-icon{ font-size: 40px; line-height:1; }
-  .weather-temp{
-    font-family: "SF Mono", "IBM Plex Mono", Consolas, monospace;
-    font-size: 34px; font-weight:600; color: var(--teal); line-height:1;
+  /* --- Currency: monitor kantorowy --- */
+  #fx-panel{
+    background:none; box-shadow:none; padding:0; border-radius:0; overflow:visible;
   }
-  .weather-desc{ font-size: 13px; color: var(--muted); margin-top:2px; }
-  .weather-meta{
-    display:flex; gap:16px; margin-top:14px; padding-top:12px;
-    border-top: 1px solid var(--line); font-size: 12px; color: var(--muted);
+  #fx-panel::before{ display:none; }
+  .exchange-board{
+    background: linear-gradient(180deg, #0d1b12, #04140c);
+    border: 6px solid #1c1c1c; border-radius: 8px;
+    padding: 16px 18px; box-shadow: 0 8px 20px rgba(0,0,0,0.45), inset 0 0 24px rgba(0,0,0,0.6);
   }
-  .weather-meta b{ color: var(--ink); font-family: "SF Mono","IBM Plex Mono",monospace; }
+  .exchange-board .fx-row{
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .exchange-board .fx-pair{
+    color: #6FEFA0; font-family:"SF Mono","IBM Plex Mono",Consolas,monospace;
+    font-weight:700; letter-spacing:0.05em; text-shadow: 0 0 6px rgba(111,239,160,0.5);
+  }
+  .exchange-board .fx-rate{
+    color: #FFD84A; font-size:16px; font-weight:700;
+    text-shadow: 0 0 6px rgba(255,216,74,0.45);
+  }
+  .exchange-board .fx-arrow-up{ color:#4CFF7A; text-shadow: 0 0 5px rgba(76,255,122,0.6); }
+  .exchange-board .fx-arrow-down{ color:#FF5C5C; text-shadow: 0 0 5px rgba(255,92,92,0.6); }
+  .exchange-board .fx-arrow-flat{ color:#5c6b5f; }
+  .exchange-board .fx-updated{ color: rgba(150,220,180,0.4); }
 
-  /* --- Currency --- */
   .fx-row{
     display:flex; align-items:center; justify-content:space-between;
     padding: 9px 2px; border-bottom: 1px solid var(--line);
@@ -328,12 +375,14 @@
         </div>
         <div class="side">
           <div class="panel" id="weather-panel">
-            <h2>Pogoda</h2>
-            <div id="weather-body"><span class="spinner"></span></div>
+            <div class="window-frame">
+              <div class="window-pane" id="weather-today"><span class="spinner"></span></div>
+              <div class="window-mullion"></div>
+              <div class="window-pane" id="weather-week"><span class="spinner"></span></div>
+            </div>
           </div>
           <div class="panel" id="fx-panel">
-            <h2>Kursy walut</h2>
-            <div id="fx-body"><span class="spinner"></span></div>
+            <div class="exchange-board" id="fx-body"><span class="spinner"></span></div>
           </div>
         </div>
       </div>
@@ -552,7 +601,8 @@
   };
 
   async function loadWeather(){
-    const body = document.getElementById('weather-body');
+    const todayEl = document.getElementById('weather-today');
+    const weekEl = document.getElementById('weather-week');
     const directUrl = 'https://api.open-meteo.com/v1/forecast?latitude=51.3222&longitude=4.9447&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe%2FBrussels&forecast_days=7';
     const fetchUrl = SUPABASE_PROXY_URL ? `${SUPABASE_PROXY_URL}?type=weather` : directUrl;
     const fetchOpts = SUPABASE_PROXY_URL ? { headers: {
@@ -566,6 +616,22 @@
       const daily = data.daily;
       const dayNames = ['Nd','Pon','Wt','Śr','Czw','Pt','Sob'];
 
+      // Lewa szyba: dziś
+      const [todayIcon] = WEATHER_CODES[daily.weathercode[0]] || ['🌡️'];
+      const todayMax = Math.round(daily.temperature_2m_max[0]);
+      const todayMin = Math.round(daily.temperature_2m_min[0]);
+      todayEl.innerHTML = `
+        <div class="weather-today">
+          <div class="weather-today-icon">${todayIcon}</div>
+          <div class="weather-today-temps">
+            <div><span class="wt-label">Dzień</span><span class="wt-value">${todayMax}°</span></div>
+            <div><span class="wt-label">Noc</span><span class="wt-value">${todayMin}°</span></div>
+          </div>
+          <div class="weather-today-place">Turnhout</div>
+        </div>
+      `;
+
+      // Prawa szyba: 7 dni
       const rows = daily.time.map((dateStr, i) => {
         const d = new Date(dateStr);
         const label = i === 0 ? 'Dziś' : dayNames[d.getDay()];
@@ -585,17 +651,11 @@
           </div>
         `;
       }).join('');
-
-      body.innerHTML = `
-        <div class="weather-days">${rows}</div>
-        <div class="weather-place">Turnhout, Belgia · dzień / noc · dane: Open-Meteo</div>
-      `;
+      weekEl.innerHTML = `<div class="weather-days">${rows}</div>`;
     }catch(e){
-      body.innerHTML = `
-        <div class="status-note">
-          ${SUPABASE_PROXY_URL ? 'Nie udało się połączyć z Twoim proxy Supabase. Sprawdź, czy funkcja jest wdrożona i URL jest poprawny.' : 'Nie udało się pobrać danych na żywo (sandbox blokuje zapytania). Ustaw SUPABASE_PROXY_URL na górze skryptu.'}
-        </div>
-      `;
+      const msg = SUPABASE_PROXY_URL ? 'Nie udało się połączyć z Twoim proxy Supabase.' : 'Nie udało się pobrać danych na żywo (sandbox blokuje zapytania).';
+      todayEl.innerHTML = `<div class="status-note">${msg}</div>`;
+      weekEl.innerHTML = '';
     }
   }
   loadWeather();
@@ -643,10 +703,10 @@
           <div class="fx-pair">USD → PLN</div>
           <div class="fx-value">${arrowFor(usdPln, prev.usdPln)}<span class="fx-rate">${usdPln.toFixed(4)}</span></div>
         </div>
-        ${btcPln != null ? `
+        ${btcUsd != null ? `
         <div class="fx-row">
-          <div class="fx-pair">₿ Bitcoin</div>
-          <div class="fx-value">${arrowFor(btcPln, prev.btcPln)}<span class="fx-rate">${Math.round(btcPln).toLocaleString('pl-PL')} PLN</span></div>
+          <div class="fx-pair">₿ BTC</div>
+          <div class="fx-value">${arrowFor(btcUsd, prev.btcUsd)}<span class="fx-rate">$${Math.round(btcUsd).toLocaleString('en-US')}</span></div>
         </div>
         ` : ''}
         <div class="fx-updated">Zaktualizowano: ${data.date} · dane: Frankfurter API, CoinGecko</div>
