@@ -105,6 +105,29 @@
   .link-del:hover{ color: var(--rust); background: rgba(180,83,58,0.1); }
   .links-empty{ color: var(--muted); font-size: 13px; padding: 10px 4px; font-style: italic; }
 
+  .notepad-sheet{
+    background:#fffef7;
+    background-image: repeating-linear-gradient(to bottom, transparent 0px, transparent 27px, rgba(120,150,190,0.38) 28px);
+    background-position: 0 6px;
+    border-radius: 6px;
+    padding: 16px 18px 16px 26px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.5) inset;
+    position: relative;
+    transform: rotate(0.3deg);
+    min-height: 180px;
+  }
+  .notepad-sheet::before{
+    content:''; position:absolute; top:0; bottom:0; left:38px; width:1px;
+    background: rgba(200,90,90,0.32);
+  }
+  .notepad-sheet textarea{
+    width:100%; height:100%; min-height:150px; background:transparent; border:none; outline:none;
+    resize: vertical;
+    font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+    font-size: 15px; line-height: 27px; color:#2b2820;
+  }
+  .notepad-sheet textarea::placeholder{ color:#a39c88; font-style:italic; }
+
   /* --- Notatnik nad tablicą --- */
   .notepad{
     background:#fffef7;
@@ -435,6 +458,9 @@
             <button id="link-add-btn">Dodaj</button>
           </div>
           <ul class="links-list" id="links-list"><span class="spinner"></span></ul>
+        </div>
+        <div class="notepad-sheet">
+          <textarea id="note-textarea" placeholder="Zapisz coś tutaj..." spellcheck="false"></textarea>
         </div>
       </div>
     </div>
@@ -866,5 +892,40 @@
   document.getElementById('link-label-input').addEventListener('keydown', e => { if(e.key === 'Enter') addLink(); });
 
   loadLinks();
+
+  /* ---------------- NOTE ---------------- */
+  const NOTE_URL = `${SUPABASE_PROXY_URL}?type=note`;
+  const noteTextarea = document.getElementById('note-textarea');
+
+  async function loadNote(){
+    try{
+      const res = await fetch(NOTE_URL, { headers: apiHeaders() });
+      if(!res.ok) throw new Error('bad response');
+      const data = await res.json();
+      noteTextarea.value = (data.note && data.note.content) || '';
+    }catch(e){
+      noteTextarea.placeholder = 'Nie udało się wczytać notatki — sprawdź połączenie.';
+    }
+  }
+
+  let lastSavedNote = '';
+  async function saveNote(){
+    const content = noteTextarea.value;
+    if(content === lastSavedNote) return;
+    try{
+      const res = await fetch(NOTE_URL, {
+        method: 'POST',
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ content })
+      });
+      if(!res.ok) throw new Error('bad response');
+      lastSavedNote = content;
+    }catch(e){
+      console.error('Nie udało się zapisać notatki', e);
+    }
+  }
+
+  noteTextarea.addEventListener('blur', saveNote);
+  loadNote().then(() => { lastSavedNote = noteTextarea.value; });
 })();
 </script>
